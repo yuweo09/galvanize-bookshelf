@@ -1,12 +1,14 @@
 'use strict';
 
-const bcrypt = require('bcrypt-as-promised');
 const boom = require('boom');
+const bcrypt = require('bcrypt-as-promised');
 const express = require('express');
+const knex = require('../knex');
+const { camelizeKeys, decamelizeKeys } = require('humps');
 
 const router = express.Router();
 
-router.post('/users', (req, res, next) => {
+router.post('/token', (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !email.trim()) {
@@ -14,14 +16,30 @@ router.post('/users', (req, res, next) => {
   }
 
   if (!password || password.length < 8) {
-    return next(boom.create(400, 'Password must be at least 8 characters long'));
+    return next(boom.create(400, 'Password must not be blank'));
   }
 
-  bcrypt.hash(password, 12)
-    .then((hashedPassword) => {
-      console.log(email, hashedPassword);
+  let user;
 
-      res.sendStatus(200);
+  knex('users')
+    .where('email', email)
+    .first()
+    .then((row) => {
+      if (!row) {
+        throw boom.create(400, 'Bad email or password');
+      }
+
+      user = camelizeKeys(row);
+
+      return bcrypt.compare(password, user.hashedPassword);
+    })
+    .then(() => {
+      delete user.hashedPassword;
+
+      res.send(user);
+    })
+    .catch(bcrypt.MISMATCH_ERROR, () => {
+      throw boom.create(400, 'Bad email or password');
     })
     .catch((err) => {
       next(err);
