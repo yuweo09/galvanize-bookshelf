@@ -49,7 +49,7 @@ const users = require('./routes/users');
 app.use(books);
 app.use(favorites);
 app.use(users);
-// app.use(token);
+app.use(token);
 
 app.use((_req, res) => {
   res.sendStatus(404);

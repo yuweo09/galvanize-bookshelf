@@ -40,34 +40,34 @@ router.get('/favorites', authorize, (req, res, next) => {
       next(err);
     });
 });
-// router.get('/favorites/:id', authorize, (req, res, next) => {
-//   const id = parseInt(req.query.bookId, 10);
-//   if (Number.isNaN(id)) {
-//     throw boom.create(400, 'Book ID must be an integer');
-//   }
-//   knex('favorites')
-//     .innerJoin('books', 'books.id', 'favorites.book_id')
-//     .where('favorites.book_id', req.query.bookId)
-//     .orderBy('books.title', 'ASC')
-//     .then((rows) => {
-//       const favorites = camelizeKeys(rows);
-//
-//       if (favorites.length === 0) {
-//         throw res.send(false);
-//       }
-//
-//       res.send(true);
-//     })
-//     .catch((err) => {
-//       next(err);
-//     });
-// });
 router.get('/favorites/:id', authorize, (req, res, next) => {
+  const id = parseInt(req.query.bookId, 10);
+  if (Number.isNaN(id)) {
+    throw boom.create(400, 'Book ID must be an integer');
+  }
   knex('favorites')
     .innerJoin('books', 'books.id', 'favorites.book_id')
-    .where('book_id', req.query.bookId)
-    .then((favorites) => res.send(favorites.length > 0));
+    .where('favorites.book_id', req.query.bookId)
+    .orderBy('books.title', 'ASC')
+    .then((rows) => {
+      const favorites = camelizeKeys(rows);
+
+      if (favorites.length === 0) {
+        throw res.send(false);
+      }
+
+      res.send(true);
+    })
+    .catch((err) => {
+      next(err);
+    });
 });
+// router.get('/favorites/:id', authorize, (req, res, next) => {
+//   knex('favorites')
+//     .innerJoin('books', 'books.id', 'favorites.book_id')
+//     .where('book_id', req.query.bookId)
+//     .then((favorites) => res.send(favorites.length > 0));
+// });
 
 router.post('/favorites', authorize, (req, res, next) => {
     const { bookId } = req.body;
@@ -90,7 +90,7 @@ router.delete('/favorites', authorize, (req, res, next) => {
   const { bookId } = req.body;
 
   knex('favorites')
-    .where('id', id)
+    .where('id', bookId)
     .first()
     .then((row) => {
       if (!row) throw boom.create(404, 'Not Found');
