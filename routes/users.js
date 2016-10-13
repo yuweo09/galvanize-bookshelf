@@ -1,45 +1,46 @@
 'use strict';
 
-const boom = require('boom');
 const bcrypt = require('bcrypt-as-promised');
+const boom = require('boom');
 const express = require('express');
 const knex = require('../knex');
 const { camelizeKeys, decamelizeKeys } = require('humps');
 
+
+// eslint-disable-next-line new-cap
 const router = express.Router();
 
-router.post('/token', (req, res, next) => {
-  const { email, password } = req.body;
+router.post('/users', (req, res, next) => {
+  const { firstName, lastName, email, password } = req.body;
+
+  if (!firstName || !firstName.trim()) {
+    return next(boom.create(400, 'First name must not be blank'));
+  }
+
+  if (!lastName || !lastName.trim()) {
+    return next(boom.create(400, 'Last name must not be blank'));
+  }
 
   if (!email || !email.trim()) {
     return next(boom.create(400, 'Email must not be blank'));
   }
 
   if (!password || password.length < 8) {
-    return next(boom.create(400, 'Password must not be blank'));
+    return next(boom.create(400, 'Password must be at least 8 characters long'));
   }
 
-  let user;
+  bcrypt.hash(password, 12)
+    .then((hashedPassword) => {
+      const insertUser = { firstName, lastName, email, hashedPassword };
 
-  knex('users')
-    .where('email', email)
-    .first()
-    .then((row) => {
-      if (!row) {
-        throw boom.create(400, 'Bad email or password');
-      }
-
-      user = camelizeKeys(row);
-
-      return bcrypt.compare(password, user.hashedPassword);
+      return knex('users').insert(decamelizeKeys(insertUser), '*');
     })
-    .then(() => {
+    .then((rows) => {
+      const user = camelizeKeys(rows[0]);
+
       delete user.hashedPassword;
 
       res.send(user);
-    })
-    .catch(bcrypt.MISMATCH_ERROR, () => {
-      throw boom.create(400, 'Bad email or password');
     })
     .catch((err) => {
       next(err);
@@ -47,3 +48,4 @@ router.post('/token', (req, res, next) => {
 });
 
 module.exports = router;
+      
