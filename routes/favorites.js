@@ -67,7 +67,7 @@ router.get('/favorites/:id', authorize, (req, res, next) => {
 //     .innerJoin('books', 'books.id', 'favorites.book_id')
 //     .where('book_id', req.query.bookId)
 //     .then((favorites) => res.send(favorites.length > 0));
-// });
+// });2chains muthfuckin right
 
 router.post('/favorites', authorize, (req, res, next) => {
     const { bookId } = req.body;
